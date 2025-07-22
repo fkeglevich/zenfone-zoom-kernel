@@ -66,7 +66,7 @@
 #include <linux/HWVersion.h>
 #include "pmic_ccsm.h"
 #if defined(CONFIG_SMB1357_CHARGER)
-#include "../../../kernel/drivers/power/ASUS_BATTERY/smb_external_include.h"
+#include "../../../drivers/power/ASUS_BATTERY/smb_external_include.h"
 extern int dcp_mode;
 extern int invalid_charger;
 #endif
