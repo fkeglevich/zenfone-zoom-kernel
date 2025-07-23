@@ -1,0 +1,19 @@
+#!/bin/sh
+
+CURDIR=$PWD
+IMAGE=boot
+[ -f $IMAGE.img ] && rm $IMAGE.img
+
+find . -name "*~" -exec rm -rf {} \;
+
+cd $CURDIR/boot
+rm -f ramdisk.cpio*
+
+cd ramdisk
+find | fakeroot cpio -H newc -o 2>/dev/null >../ramdisk.cpio
+cd ..
+gzip -n -9 ramdisk.cpio
+cd $CURDIR
+
+./mkbootimg --kernel boot/zImage -o $IMAGE.img --ramdisk boot/ramdisk.cpio.gz --base 0x10000000 --pagesize 2048 --ramdiskaddr 0x11000000 --second boot/second.bin --cmdline 'init=/init pci=noearly loglevel=0 vmalloc=256M androidboot.hardware=mofd_v1 watchdog.watchdog_thresh=60 androidboot.spid=xxxx:xxxx:xxxx:xxxx:xxxx:xxxx androidboot.serialno=01234567890123456789 snd_pcm.maximum_substreams=8 ip=50.0.0.2:50.0.0.1::255.255.255.0::usb0:on debug_locks=0 n_gsm.mux_base_conf="ttyACM0,0 ttyXMM0,1" bootboost=1 androidboot.selinux=permissive'
+
