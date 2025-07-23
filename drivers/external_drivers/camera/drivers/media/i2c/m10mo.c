@@ -2640,6 +2640,7 @@ static int m10mo_set_zsl_capture(struct v4l2_subdev *sd, int sel_frame)
 	/* TODO: Fix this. Currently we do not use this */
 	(void) sel_frame;
 
+	printk("@%s %d Setting ZSL capture \n", __func__, __LINE__);
 	val = __get_dual_capture_value(dev->capture_mode);
 
 	/* Check dual capture status before the capture request */
@@ -2677,6 +2678,7 @@ int m10mo_set_zsl_raw_capture(struct v4l2_subdev *sd)
 {
 	int ret;
 
+	printk("@%s %d Setting Raw capture \n", __func__, __LINE__);
 	/* Set capture mode - Infinity capture 3 */
 	ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, CAPTURE_MODE,
 						CAP_MODE_INFINITY_ZSL);
