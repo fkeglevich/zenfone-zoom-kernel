@@ -4575,8 +4575,9 @@ static int atomisp_set_fmt_to_isp(struct video_device *vdev,
 			dev_err(isp->dev, "mipi_info is NULL\n");
 			return -EINVAL;
 		}
-
-		if (0 == strncmp(isp->inputs[asd->input_curr].camera->name, "m12mo", strlen("m12mo"))) {
+		printk(KERN_INFO "ASUSBSP --- RAW10 hack started! \n");
+		if (0 == strncmp(isp->inputs[asd->input_curr].camera->name, "m10mo", strlen("m10mo"))) {
+			printk(KERN_INFO "ASUSBSP --- RAW10 hack started! [2]\n");
 			if(pix->pixelformat == V4L2_PIX_FMT_SGBRG8) {
 			    printk(KERN_INFO "ASUSBSP --- To capture RAW10, WA for m10mo/m12mo on ASUS project! \n");
 			    input_format_temporary_keep = mipi_info->input_format;
