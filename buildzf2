@@ -1,0 +1,135 @@
+#!/bin/bash
+
+export ARCH=x86_64
+export CROSS_COMPILE=x86_64-linux-android-
+export CCOMPILE=$CROSS_COMPILE
+
+#Change Toolchain GCC versions from here
+#But I personally prefer Google's x86_64-linux-android-4.9
+GCC_VERSION=4.9
+
+TC_PREFIX=x86_64-linux-android
+TOOLCHAIN=$TC_PREFIX-$GCC_VERSION
+CUR_DIR=$PWD
+
+clear
+
+echo "---------------SETTING UP ENVIRONMENT---------------"
+start=`date +%s`
+NOW=$(date +"%d-%m-%Y")
+echo "Current Date : $NOW"
+echo "Applying Build Settings"
+export SLEEP=1
+echo "Setting CPU Cores/Threads"
+export CPUS=`nproc`
+echo "Setting Version Number"
+export VER=v$1
+echo "Setting Defconfig"
+export DEFCONFIG=x86_64_moor_defconfig
+echo "Setting bzImage Location For FlareX kernel"
+export BZIMAGE=arch/x86/boot/bzImage
+echo "Enabling Graphite Optimizations"
+export ENABLE_GRAPHITE=true
+echo "Environment Setup Complete Now Moving To Compiling"
+echo ""
+echo ""
+echo ""
+echo "-----CHECKING IF TOOLCHAIN IS IN CORRECT PATH-------"
+sleep $SLEEP
+cd ..
+TC=$PWD
+if [ -f $TC/$TOOLCHAIN/bin/$TC_PREFIX-gcc ];
+then
+   cd $CUR_DIR
+   echo "ToolChain exists"
+   echo "Starting Compilation"
+   echo "SETTING TOOLCHAIN PATH : $TC/$TOOLCHAIN/bin"
+   export PATH=$TC/$TOOLCHAIN/bin-ccache:$TC/$TOOLCHAIN/bin:$PATH
+   echo ""
+   echo ""
+   echo ""
+   sleep $SLEEP
+   echo "------------------COMPILING----------------------"
+else
+   echo "Could not find toolchain at $TC/$TOOLCHAIN/"
+   echo "DOWNLOADING TOOLCAHIN"
+   git clone https://github.com/Zenfone2-development/x86_64-linux-android-$GCC_VERSION
+   echo "Starting Compilation"
+   echo "SETTING TOOLCHAIN PATH : $TC/$TOOLCHAIN/bin"
+   export PATH=$TC/$TOOLCHAIN/bin-ccache:$TC/$TOOLCHAIN/bin:$PATH
+   echo ""
+   echo ""
+   echo ""
+   sleep $SLEEP
+   cd $CUR_DIR
+   echo "------------------COMPILING----------------------"
+fi
+
+#Build
+sleep $SLEEP
+#make clean
+echo "Starting Build Process"
+export USE_CCACHE=1
+sleep $SLEEP
+if [ -f .config ];
+then
+   echo ".config exists"
+else
+   echo ".config Does Not Exists"
+   echo "Compiling From $DEFCONFIG"
+   make $DEFCONFIG
+   sleep $SLEEP
+fi
+make $EV -j$CPUS 2>&1 | tee build.log
+
+if [ -f $BZIMAGE ];
+then
+   echo "$BZIMAGE exists"
+   echo "-------------------SUCCESS-----------------------"
+   echo ""
+   echo ""
+   echo ""
+   sleep $SLEEP
+else
+   echo "-----------------------------------ERROR------------------------------------"
+   echo "      Failed to compile. Please Check *build.log* For Compile Errors"
+   echo "-----------------------------------ERROR------------------------------------"
+   echo "exiting script"
+   sleep $SLEEP
+   exit 0
+fi
+
+clear
+echo "--------------------PACKING-------------------------"
+echo "Starting Packing To Recovery Flashable Zip"
+rm -rf out/modules/*
+find . -name '*.ko' -exec strip --strip-debug {} \;
+find . -name '*.ko' -exec ./scripts/sign-file sha256 ./signing_key.priv ./signing_key.x509 {} \;
+find . -name '*.ko' -exec cp {} out/modules/ \;
+cd out/
+echo "Removing Old Files"
+rm -rf zImage *.zip
+sleep $SLEEP
+echo "Copying bzImage"
+mv ../arch/x86/boot/bzImage zImage
+sleep $SLEEP
+echo "Compiling FlareX_"$VER".zip"
+find . -type f -exec zip -9 FlareX_"$VER".zip {} +
+nowf=$(date +"%T")
+cd ..
+echo "Current Date : $NOW"
+echo "Applying Build Settings : done"
+echo "Version Number = $VER"
+echo "cleaning previous files : done"
+echo "Starting Build Process  : done"
+echo "Build complete"
+
+end=`date +%s`
+runtime=$((end-start))
+echo "Completion Time :"
+echo "$runtime sec\n"
+
+echo "------------------- CLEANING------------------------"
+make clean && make mrproper
+touch out/modules/placeholder
+echo "----------------------DONE--------------------------"
