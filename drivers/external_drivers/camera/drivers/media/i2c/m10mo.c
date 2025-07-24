@@ -2714,7 +2714,9 @@ int m10mo_set_zsl_raw_capture(struct v4l2_subdev *sd)
 	// 	return ret;
 
 	// /* RAW mode is set. Now do a normal capture */
-	// return m10mo_set_zsl_capture(sd, 1);
+	#if 0
+	return m10mo_set_zsl_capture(sd, 1);
+	#endif
 }
 
 int m10mo_set_burst_mode(struct v4l2_subdev *sd, unsigned int val)
@@ -3235,6 +3237,17 @@ int get_resolution_index(const struct m10mo_resolution *res,
 	return -1;
 }
 
+void __m10mo_set_raw_mipi_header(struct v4l2_subdev *sd)
+{
+	// Needs parameter MODE!
+	printk(KERN_INFO "@%s, Setting Raw Capture in MIPI header.\n", __func__);
+	// RAWTODO: Change the DataType 0x2a in MIPI Header to a RAW10 value?
+	(void) m10mo_writeb(sd, CATEGORY_PARAM, 0x0a, 0x2a);                           // Set the DataType 0x2a in MIPI Header, it means RAW8.
+	(void) m10mo_writeb(sd, CATEGORY_PARAM, 0x18, 0x12);                           // Set the line-unit to 4736.(0x1280)
+	(void) m10mo_writeb(sd, CATEGORY_PARAM, 0x19, 0x80);                           // Set the line-unit to 4736.(0x1280)
+	(void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, M10MO_CAPTURE_MODE_ZSL_RAW);
+}
+
 int __m10mo_try_mbus_fmt(struct v4l2_subdev *sd,
 			struct v4l2_mbus_framefmt *fmt, bool update_fmt)
 {
@@ -3261,16 +3274,36 @@ int __m10mo_try_mbus_fmt(struct v4l2_subdev *sd,
 		fmt->code = V4L2_MBUS_FMT_CUSTOM_NV12;
 	}
     if(fmt->code == V4L2_MBUS_FMT_SGBRG8_1X8){
+		printk(KERN_INFO "@%s, Got Raw Capture format: V4L2_MBUS_FMT_SGBRG8_1X8.\n", __func__);
 	    (void) m10mo_readb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, &read_val);
-		if(read_val != RAW_CAP){
+
+		printk(KERN_INFO "@%s, M10MO capture mode: %d.\n", __func__, read_val);
+		printk(KERN_INFO "@%s, M10MO_CAPTURE_MODE_ZSL_RAW value: %d.\n", __func__, M10MO_CAPTURE_MODE_ZSL_RAW);
+		// Update: ele não consegue entrar no param mode
+		// Tooodo esse código precisa acontecer aaaantes da captura SOS
+		if(read_val != M10MO_CAPTURE_MODE_ZSL_RAW){
+			//RAWTODO: it's probably necessary to force this if to enter HMMMM
+			//SCAT
+
+			#if 0 //desabilitando por enquanto
+			if (dev->m10mo_request_cmd_lock_flag == 1){
+				mutex_unlock(&dev->m10mo_request_cmd_lock);
+				printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
+				dev->m10mo_request_cmd_lock_flag = 0;
+			}
+
 	        (void)__m10mo_param_mode_set(sd);
-			printk(KERN_INFO "@%s, Raw Capture.\n", __func__);
-			// RAWTODO: Change the DataType 0x2a in MIPI Header to a RAW10 value?
-            (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x0a, 0x2a);                           // Set the DataType 0x2a in MIPI Header, it means RAW8.
-            (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x18, 0x12);                           // Set the line-unit to 4736.(0x1280)
-            (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x19, 0x80);                           // Set the line-unit to 4736.(0x1280)
-			(void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, RAW_CAP);
+			__m10mo_set_raw_mipi_header(sd); //MIPI
 			(void) m10mo_request_cmd_effect(sd, M10MO_MONITOR_MODE_ZSL_REQUEST_CMD, NULL); // Enter into m10mo's Monitor mode.
+
+			printk(KERN_INFO "@%s, Nããão TRAVOOOOU.\n", __func__);
+			dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_RAW;
+			mdelay(500);
+			#endif
+
+			
+			//NOTAAAAAAAAAAAAAAAAAAAAAAAAAAAA: verificar se os valores ainda estão lá no M10MO
+			printk(KERN_INFO "@%s, Raw Capture: Nããão TRAVOOOOU.\n", __func__);
 			dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_RAW;
 			mdelay(500);
 		}
@@ -3444,6 +3477,12 @@ int __m10mo_set_mbus_fmt(struct v4l2_subdev *sd,
 	/* Update the stream info. Atomisp uses this for configuring mipi */
 	__m10mo_update_stream_info(sd, fmt);
 
+
+	//TODO: ver diferenças entre V4L2_MBUS_FMT_CUSTOM_M10MO_RAW e V4L2_MBUS_FMT_SGBRG8_1X8
+	printk(KERN_INFO "@%s, Raw Capture: Test values mode: %d, format code: %d\n", __func__, M10MO_RESOLUTION_MODE_1, V4L2_MBUS_FMT_CUSTOM_M10MO_RAW);
+	printk(KERN_INFO "@%s, Raw Capture: format code 2: %d\n", __func__, V4L2_MBUS_FMT_SGBRG8_1X8);
+
+	printk(KERN_INFO "@%s, Raw Capture: Mode: %d, format code: %d\n", __func__, mode, dev->format.code);
 	/*
 	 * Handle raw capture mode separately. Update the capture mode to RAW
 	 * capture now. So that the next streamon call will start RAW capture.
@@ -3485,7 +3524,8 @@ static int m10mo_set_run_mode(struct v4l2_subdev *sd)
     printk("@%s %d start, capture_mode = %d, run_mode = 0x%x\n", __func__, __LINE__, dev->capture_mode, dev->run_mode);
 
 // RAWTODO: uncomment this part?
-#if 1
+// Update NO! (not yet!)
+#if 0
 	/*
 	 * Handle RAW capture mode separately irrespective of the run mode
 	 * being configured. Start the RAW capture right away.
@@ -3594,9 +3634,17 @@ static void m10mo_check_app_cap_mode(struct v4l2_subdev *sd)
 		//RAWTODO: does it need to remove __m10mo_param_mode_set and m10mo_set_run_mode (?)
 		//RAWTODO: does this part needs to be commented out?
 		printk(KERN_INFO "m10mo, Start RAW capture mode.\n");
+
+		#if 0
+			(void)__m10mo_param_mode_set(sd);
+			TALVEZ REMOVER PQ ele coiseia depois (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, M10MO_CAPTURE_MODE_ZSL_RAW);
+			(void) m10mo_set_run_mode(sd);
+		#endif
+
+
 	    //(void)__m10mo_param_mode_set(sd);
-	    (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, M10MO_CAPTURE_MODE_ZSL_RAW);
-		(void) m10mo_set_run_mode(sd);
+	    //TALVEZ REMOVER PQ ele coiseia depois (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, M10MO_CAPTURE_MODE_ZSL_RAW);
+		//(void) m10mo_set_run_mode(sd);
 		break;
 	default:
 	    printk(KERN_INFO "m10mo, erro APP capture mode %d \n", dev->capture_mode);
@@ -3692,6 +3740,17 @@ int m10mo_send_still_capture_cmds(struct v4l2_subdev *sd)
     }
 	//=== Check "application capture mode" and send command to m10mo if needed. ===//
     m10mo_check_app_cap_mode(sd);
+
+	if (dev->capture_mode == M10MO_CAPTURE_MODE_ZSL_RAW)
+	{
+		printk("@%s %d Start configuring Raw capture! \n", __func__, __LINE__);
+
+		/* switch to RAW capture mode */
+		// RAWTODO: does it need to not use REG_CAP_NV12_MODE?
+		// RAWTODO: 
+		// 1) verify if this actually needs to be done
+		ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REG_CAP_NV12_MODE, RAW_CAPTURE);
+	}
 
 	//=== Choose the action of preview frame after capturing ===//
 	// 0x00: start YUV Preview output directly
@@ -5160,7 +5219,9 @@ static long m10mo_ioctl(struct v4l2_subdev *sd, unsigned int cmd,
 		const struct m10mo_resolution *res;
 		//dev->cmdgg
 		//RAWTODO
-		dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_RAW;
+
+		// Contiinuar deixando sem?
+		//dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_RAW;
 
 		dev->entries_curr_table = resolutions_sizes[M10MO_MODE_CAPTURE_INDEX];
 	    dev->curr_res_table = resolutions[M10MO_MODE_CAPTURE_INDEX];
@@ -5192,6 +5253,12 @@ static long m10mo_ioctl(struct v4l2_subdev *sd, unsigned int cmd,
 		break;
     case EXT_ISP_CID_SET_M10MO_START_PREVIEW:
 	    printk("EXT_ISP_CID_SET_M10MO_START_PREVIEW (%d)", m10mo_ctrl->data);
+
+		if(dev->m10mo_mode == M10MO_PARAMETER_MODE){
+			printk("Setting MIPI header!");
+			__m10mo_set_raw_mipi_header(sd);
+		}
+
         ret = 0;
 		break;
     case EXT_ISP_CID_GET_LENS_INITIALIZATION_DONE:
