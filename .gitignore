@@ -95,3 +95,4 @@ out/zImage
 out/*.zip
 build.log
 extras/boot.img
+zlogs/*
