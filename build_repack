@@ -118,6 +118,8 @@ rm ./boot/ramdisk/lib/modules/*.ko;
 cp -af ./repack/modules/*.ko ./boot/ramdisk/lib/modules/;
 chmod 0644 ./boot/ramdisk/lib/modules/*.ko;
 
+cp ./repack/default.prop ./boot/ramdisk/default.prop
+
 mv ./boot ./repack
 
 cd repack/
