@@ -39,23 +39,23 @@
  * Currently the FW image and dump paths are hardcoded here.
  * TBD: flexible interface for defining proper path as needed
  */
-#define M10MO_FW_LOG1_NAME      "/data/M10MO_log1"
-#define M10MO_FW_LOG2_1_NAME    "/data/M10MO_log2_1"
-#define M10MO_FW_LOG2_2_NAME    "/data/M10MO_log2_2"
-#define M10MO_FW_LOG2_3_NAME    "/data/M10MO_log2_3"
-#define M10MO_FW_LOG3_NAME      "/data/M10MO_log3"
+#define M10MO_FW_LOG1_NAME      "/data/misc/media/M10MO_log1"
+#define M10MO_FW_LOG2_1_NAME    "/data/misc/media/M10MO_log2_1"
+#define M10MO_FW_LOG2_2_NAME    "/data/misc/media/M10MO_log2_2"
+#define M10MO_FW_LOG2_3_NAME    "/data/misc/media/M10MO_log2_3"
+#define M10MO_FW_LOG3_NAME      "/data/misc/media/M10MO_log3"
 
 #define M10MO_FW_LOG_SUFFIX     ".bin"
 #define M10MO_FW_LOG_MAX_NAME_LEN (128)
 
-#define M10MO_FW_DUMP_PATH      "/data/M10MO_dump.bin"
-#define M10MO_CALI_DATA_DUMP_PATH      "/data/M10MO_cali_data_dump.bin"
+#define M10MO_FW_DUMP_PATH      "/data/misc/media/M10MO_dump.bin"
+#define M10MO_CALI_DATA_DUMP_PATH      "/data/misc/media/M10MO_cali_data_dump.bin"
 #define M10MO_FW_NAME           "M10MO_fw.bin"
 #define M10MO_DIT_FW_NAME       "M10MO_DIT_fw.bin"
 #define M10MO_SHD_NAME           "ASUS_SHD.bin"
-#define M10MO_SHD_DUMP_PATH      "/data/ASUS_SHD.bin"
+#define M10MO_SHD_DUMP_PATH      "/data/misc/media/ASUS_SHD.bin"
 #define M10MO_IQ_NAME           "cac.bin"
-#define M10MO_IQ_DUMP_PATH      "/data/cac_dump.bin"
+#define M10MO_IQ_DUMP_PATH      "/data/misc/media/cac_dump.bin"
 #define M10MO_FW_VERSION	"/etc/firmware/M10MO.version"
 #define USB_DEV_PATH      "/sys/bus/pci/drivers/dwc3_otg/0000:00:11.0/power/control"
 
