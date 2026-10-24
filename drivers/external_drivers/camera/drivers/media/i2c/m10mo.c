@@ -3255,27 +3255,27 @@ int __m10mo_try_mbus_fmt(struct v4l2_subdev *sd,
     if(fmt->code == V4L2_MBUS_FMT_SGBRG8_1X8){
 	    (void) m10mo_readb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, &read_val);
 		if(read_val != RAW_CAP){
-			if (dev->m10mo_request_cmd_lock_flag == 1) {
-				mutex_unlock(&dev->m10mo_request_cmd_lock);
-				printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
-				dev->m10mo_request_cmd_lock_flag = 0;
-		    }
-			dev->lock_i2c_write_flag = 0;
+			// if (dev->m10mo_request_cmd_lock_flag == 1) {
+			// 	mutex_unlock(&dev->m10mo_request_cmd_lock);
+			// 	printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
+			// 	dev->m10mo_request_cmd_lock_flag = 0;
+		    // }
+			// dev->lock_i2c_write_flag = 0;
 	        (void)__m10mo_param_mode_set(sd);
 			printk(KERN_INFO "@%s, Raw Capture.\n", __func__);
             (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x0a, 0x2a);                           // Set the DataType 0x2a in MIPI Header, it means RAW8.
             (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x18, 0x12);                           // Set the line-unit to 4736.(0x1280)
             (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x19, 0x80);                           // Set the line-unit to 4736.(0x1280)
 			(void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, RAW_CAP);
-			if (dev->m10mo_request_cmd_lock_flag == 1) {
-				mutex_unlock(&dev->m10mo_request_cmd_lock);
-				printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
-				dev->m10mo_request_cmd_lock_flag = 0;
-		    }
-			wake_up(&dev->irq_waitq);
+			// if (dev->m10mo_request_cmd_lock_flag == 1) {
+			// 	mutex_unlock(&dev->m10mo_request_cmd_lock);
+			// 	printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
+			// 	dev->m10mo_request_cmd_lock_flag = 0;
+		    // }
+			// wake_up(&dev->irq_waitq);
 			(void) m10mo_request_cmd_effect(sd, M10MO_MONITOR_MODE_ZSL_REQUEST_CMD, NULL); // Enter into m10mo's Monitor mode.
 			dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_RAW;
-			dev->lock_i2c_write_flag = 1;
+			// dev->lock_i2c_write_flag = 1;
 			mdelay(500);
 		}
 	}else{
@@ -3506,17 +3506,6 @@ static int m10mo_set_run_mode(struct v4l2_subdev *sd)
 	switch (dev->run_mode) {
 	case CI_MODE_STILL_CAPTURE:
 	    dev->lock_i2c_write_flag = 0;
-		if (dev->capture_mode == M10MO_CAPTURE_MODE_ZSL_RAW) {
-			/*
-			* As RAW capture is done from a command line tool, we are not
-			* restarting the preview after the RAW capture. So it is ok
-			* to reset the RAW capture mode here because the next RAW
-			* capture has to start from the Set format onwards.
-			*/
-			//dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_NORMAL;
-			ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REG_CAP_NV12_MODE, RAW_CAPTURE);
-			printk("@%s %d Raw capture!\n", __func__, __LINE__);
-		}
 	    (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, CAPC_TRANSFER_START, 0x1);
 		dev->lock_i2c_write_flag = 1;
 #ifndef off_c51
@@ -3602,8 +3591,9 @@ static void m10mo_check_app_cap_mode(struct v4l2_subdev *sd)
 		(void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, M10MO_CAPTURE_MODE_ZSL_NORMAL);
 		break;
 	case M10MO_CAPTURE_MODE_ZSL_RAW:
+		printk(KERN_INFO "m10mo, APP RAW capture mode.\n");
 //	    (void)__m10mo_param_mode_set(sd);
-//	    (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, RAW_CAP);
+	    (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, RAW_CAP);
 //		(void) m10mo_set_run_mode(sd);
 		break;
 	default:
