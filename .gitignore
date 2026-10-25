@@ -96,3 +96,5 @@ out/*.zip
 build.log
 extras/boot.img
 zlogs/*
+
+!firmware/dfw_sst.bin
