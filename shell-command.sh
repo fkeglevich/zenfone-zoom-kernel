@@ -1,0 +1,1 @@
+nix-shell -p python3 gcc binutils bc zip android-tools ccache
