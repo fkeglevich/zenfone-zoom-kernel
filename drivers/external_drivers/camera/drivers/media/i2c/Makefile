@@ -36,7 +36,7 @@ endif
 obj-$(CONFIG_VIDEO_S5K8AAY)    += s5k8aay.o
 obj-$(CONFIG_VIDEO_S5K6B2YX)    += s5k6b2yx.o
 
-m10mo_isp-objs := m10mo.o m10mo_fw.o m10mo_tables.o m10mo_fw_type2.o m10mo_fw_type1_5.o flashnode.o io3730_auto.o
+m10mo_isp-objs := m10mo.o m10mo_fw.o m10mo_tables.o m10mo_sysfs.o m10mo_fw_type2.o m10mo_fw_type1_5.o flashnode.o io3730_auto.o
 obj-$(CONFIG_VIDEO_M10MO)    += m10mo_isp.o
 obj-$(CONFIG_VIDEO_M10MO)    += m10mo_spi.o
 

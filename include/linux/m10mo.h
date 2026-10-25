@@ -1283,6 +1283,29 @@ static const unsigned short iso_table[][2] = {
 };
 extern const struct M10MO_AF_Parameters m10m0_af_parameters[];
 
+int m10mo_ispd4(struct m10mo_device *dev);
+extern struct attribute_group m10mo_attribute_group[];
+int __m10mo_s_power(struct v4l2_subdev *sd, int on, bool fw_update_mode);
+int m10mo_identify_fw_type(struct v4l2_subdev *sd);
+int m10mo_s_power_fac(int on);
+int m10mo_detect(struct v4l2_subdev *sd);
+
+extern u32 fw_version_val1;
+extern u32 fw_version_val2;
+
+extern int DIT_version;
+extern int m10mo_break_log_loop;
+extern struct v4l2_subdev *sdd;
+extern int ASUS_flag;
+extern int ois_status;
+extern int num_LLS;
+extern u8 m10mo_trace_log_lock;
+extern u32 asus_camera_flag;
+extern u8 m10mo_capture_pre_flag;
+extern u8 m10mo_boot_state;
+extern int isp_update_status;
+extern int dbglvl;
+
 #endif	/* M10MO_H */
 
 
