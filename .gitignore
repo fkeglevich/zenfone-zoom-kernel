@@ -97,4 +97,4 @@ build.log
 extras/boot.img
 zlogs/*
 
-!firmware/*.bin
+!firmware/dfw_sst.bin
