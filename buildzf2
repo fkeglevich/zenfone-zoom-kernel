@@ -12,6 +12,11 @@ TC_PREFIX=x86_64-linux-android
 TOOLCHAIN=$TC_PREFIX-$GCC_VERSION
 CUR_DIR=$PWD
 
+export CCACHE_DIR="$HOME/.cache/ccache"
+mkdir -p "$CCACHE_DIR"
+export CCACHE_COMPRESS=1
+ccache -M 20G
+
 clear
 
 echo "---------------SETTING UP ENVIRONMENT---------------"
@@ -80,7 +85,7 @@ else
    make $DEFCONFIG
    sleep $SLEEP
 fi
-make $EV -j$CPUS 2>&1 | tee build.log
+make CC="ccache ${CROSS_COMPILE}gcc" $EV -j$CPUS 2>&1 | tee build.log
 
 if [ -f $BZIMAGE ];
 then
