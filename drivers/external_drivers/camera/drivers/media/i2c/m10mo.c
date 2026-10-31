@@ -3249,27 +3249,28 @@ int __m10mo_try_mbus_fmt(struct v4l2_subdev *sd,
     if(fmt->code == V4L2_MBUS_FMT_SGBRG8_1X8){
 	    (void) m10mo_readb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, &read_val);
 		if(read_val != RAW_CAP){
-			// if (dev->m10mo_request_cmd_lock_flag == 1) {
-			// 	mutex_unlock(&dev->m10mo_request_cmd_lock);
-			// 	printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
-			// 	dev->m10mo_request_cmd_lock_flag = 0;
-		    // }
-			// dev->lock_i2c_write_flag = 0;
+			// m10mo_wait_mode_change
+			if (dev->m10mo_request_cmd_lock_flag == 1) {
+				mutex_unlock(&dev->m10mo_request_cmd_lock);
+				printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
+				dev->m10mo_request_cmd_lock_flag = 0;
+		    }
+			dev->lock_i2c_write_flag = 0;
 	        (void)__m10mo_param_mode_set(sd);
 			printk(KERN_INFO "@%s, Raw Capture.\n", __func__);
             (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x0a, 0x2a);                           // Set the DataType 0x2a in MIPI Header, it means RAW8.
             (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x18, 0x12);                           // Set the line-unit to 4736.(0x1280)
             (void) m10mo_writeb(sd, CATEGORY_PARAM, 0x19, 0x80);                           // Set the line-unit to 4736.(0x1280)
 			(void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REQUEST_MULTI_CAP_FRAMES, RAW_CAP);
-			// if (dev->m10mo_request_cmd_lock_flag == 1) {
-			// 	mutex_unlock(&dev->m10mo_request_cmd_lock);
-			// 	printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
-			// 	dev->m10mo_request_cmd_lock_flag = 0;
-		    // }
-			// wake_up(&dev->irq_waitq);
+			if (dev->m10mo_request_cmd_lock_flag == 1) {
+				mutex_unlock(&dev->m10mo_request_cmd_lock);
+				printk("@%s %d, UNLOCK m10mo_request_cmd_lock.\n", __func__, __LINE__);
+				dev->m10mo_request_cmd_lock_flag = 0;
+		    }
+			wake_up(&dev->irq_waitq);
 			(void) m10mo_request_cmd_effect(sd, M10MO_MONITOR_MODE_ZSL_REQUEST_CMD, NULL); // Enter into m10mo's Monitor mode.
 			dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_RAW;
-			// dev->lock_i2c_write_flag = 1;
+			dev->lock_i2c_write_flag = 1;
 			mdelay(500);
 		}
 	}else{
@@ -3307,10 +3308,16 @@ int __m10mo_try_mbus_fmt(struct v4l2_subdev *sd,
 		} else if (fmt->code == V4L2_MBUS_FMT_CUSTOM_M10MO_RAW) {
 			fmt->width = dev->mipi_params.raw_width;
 			fmt->height = dev->mipi_params.raw_height;
+		// } else if (fmt->code == V4L2_MBUS_FMT_SGBRG8_1X8) {
+		// 	fmt->width = dev->mipi_params.raw_width;
+		// 	fmt->height = dev->mipi_params.raw_height;
+		// 	printk(KERN_INFO "@%s, Raw Size: (%d, %d).\n", __func__, fmt->width, fmt->height);
 		} else {
 			fmt->width = res[idx].width;
 			fmt->height = res[idx].height;
 		}
+
+		printk("@%s %d, RAW size: (%d, %d)\n", __func__, __LINE__, fmt->width, fmt->height);
 	}
 	return idx;
 }
@@ -3321,6 +3328,7 @@ static int m10mo_try_mbus_fmt(struct v4l2_subdev *sd,
 	struct m10mo_device *dev = to_m10mo_sensor(sd);
 	int idx;
 
+	printk("@%s %d, format code = 0x%x\n", __func__, __LINE__, fmt->code);
 	mutex_lock(&dev->input_lock);
 	idx = dev->fw_ops->try_mbus_fmt(sd, fmt, true);
 	mutex_unlock(&dev->input_lock);
@@ -3357,9 +3365,25 @@ int __m10mo_update_stream_info(struct v4l2_subdev *sd,
 		/* TODO: handle FW type cases here */
 		break;
 	case M10MO_RESOLUTION_MODE_1:
+		if (fmt->code == V4L2_MBUS_FMT_SGBRG8_1X8) {
+        /*
+         * Standard CSI-2 RAW8 Bayer input.
+         * Assumes RAW is transmitted on virtual channel 1.
+         */
+        stream_info->ch_id = M10MO_ZSL_JPEG_VIRTUAL_CHANNEL;
+        stream_info->isys_configs = 1;
+
+        stream_info->isys_info[0].input_format =
+            (u8)ATOMISP_INPUT_FORMAT_RAW_8;
+        stream_info->isys_info[0].width = 4736; //(4736, 3552)
+        stream_info->isys_info[0].height = 3552;
+
+    	}
 		/* Raw Capture is a special case. Capture data comes like HDR */
-		if (fmt->code == V4L2_MBUS_FMT_JPEG_1X8 ||
+		else if (fmt->code == V4L2_MBUS_FMT_JPEG_1X8 ||
 			fmt->code == V4L2_MBUS_FMT_CUSTOM_M10MO_RAW) {
+			//||
+			//fmt->code == V4L2_MBUS_FMT_SGBRG8_1X8) {
 			/* fill stream info */
 			stream_info->ch_id = M10MO_ZSL_JPEG_VIRTUAL_CHANNEL;
 			stream_info->isys_configs = 1;
@@ -3437,6 +3461,10 @@ int __m10mo_set_mbus_fmt(struct v4l2_subdev *sd,
 	} else if (dev->format.code == V4L2_MBUS_FMT_CUSTOM_M10MO_RAW) {
 		fmt->width = dev->mipi_params.raw_width;
 		fmt->height = dev->mipi_params.raw_height;
+	// } else if (dev->format.code == V4L2_MBUS_FMT_SGBRG8_1X8) {
+	// 	fmt->width = dev->mipi_params.raw_width;
+	// 	fmt->height = dev->mipi_params.raw_height;
+	// 	printk(KERN_INFO "@%s, V4L2_MBUS_FMT_SGBRG8_1X8 start! fmt->width is %d, fmt->height is %d\n", __func__, fmt->width, fmt->height);
 	}
 
 	/* Update the stream info. Atomisp uses this for configuring mipi */
@@ -3500,7 +3528,21 @@ static int m10mo_set_run_mode(struct v4l2_subdev *sd)
 	switch (dev->run_mode) {
 	case CI_MODE_STILL_CAPTURE:
 	    dev->lock_i2c_write_flag = 0;
-	    (void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, CAPC_TRANSFER_START, 0x1);
+		// if (dev->capture_mode == M10MO_CAPTURE_MODE_ZSL_RAW) {
+		// 	/*
+		// 	* As RAW capture is done from a command line tool, we are not
+		// 	* restarting the preview after the RAW capture. So it is ok
+		// 	* to reset the RAW capture mode here because the next RAW
+		// 	* capture has to start from the Set format onwards.
+		// 	*/
+		// 	//dev->capture_mode = M10MO_CAPTURE_MODE_ZSL_NORMAL;
+		// 	// ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REG_CAP_NV12_MODE, RAW_CAPTURE);
+
+		// 	ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, REG_CAP_NV12_MODE, RAW_CAPTURE);
+		// 	printk("@%s %d Raw capture!\n", __func__, __LINE__);
+		// }
+	    ret = m10mo_writeb(sd, CATEGORY_CAPTURE_PARAM, CAPP_YUVOUT_MAIN, REG_BAYER8);
+		(void) m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, CAPC_TRANSFER_START, 0x1);
 		dev->lock_i2c_write_flag = 1;
 #ifndef off_c51
         ret = m10mo_set_still_capture(sd);
@@ -3687,7 +3729,7 @@ int m10mo_send_still_capture_cmds(struct v4l2_subdev *sd)
 	//=== Choose the action of preview frame after capturing ===//
 	// 0x00: start YUV Preview output directly
 	// 0x01: start YUV Preview output if CateC/5 = 0x2
-//	ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, AFT_CAP_SELECT, 0x1);
+	ret = m10mo_writeb(sd, CATEGORY_CAPTURE_CTRL, AFT_CAP_SELECT, 0x1);
 
     //=== Send shot_mode to m10mo for DIT AE. ===//
 	ret = m10mo_writeb(sd, CATEGORY_ASUS, ASUS_AE_SCENE_MODE, dev->shot_mode);
