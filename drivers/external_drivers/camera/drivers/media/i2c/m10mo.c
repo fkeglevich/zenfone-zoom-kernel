@@ -2737,6 +2737,12 @@ int m10mo_set_burst_mode(struct v4l2_subdev *sd, unsigned int val)
 	}
 #endif
 	struct m10mo_device *dev = to_m10mo_sensor(sd);
+
+	printk("@%s %d start\n", __func__, __LINE__);
+	if (dev->capture_mode == M10MO_CAPTURE_MODE_ZSL_RAW) {
+		return 0;
+	}
+
 	if(!val){
 	    dev->capture_mode &= ~M10MO_CAPTURE_MODE_ZSL_BURST;
 	}else{
@@ -2748,6 +2754,12 @@ int m10mo_set_burst_mode(struct v4l2_subdev *sd, unsigned int val)
 static int m10mo_set_lls_mode(struct v4l2_subdev *sd, unsigned int val)
 {
 	struct m10mo_device *dev = to_m10mo_sensor(sd);
+
+	printk("@%s %d start\n", __func__, __LINE__);
+	if (dev->capture_mode == M10MO_CAPTURE_MODE_ZSL_RAW) {
+		return 0;
+	}
+
 	if(!val){
 	    dev->capture_mode &= ~APP_LLS_CAP_MODE_ZSL;
 	}else{
@@ -2781,6 +2793,11 @@ static int m10mo_set_hdr_mode(struct v4l2_subdev *sd, unsigned int val)
 		return -EINVAL;
 	}
 */
+	printk("@%s %d start\n", __func__, __LINE__);
+	if (dev->capture_mode == M10MO_CAPTURE_MODE_ZSL_RAW) {
+		return 0;
+	}
+
     if(!val){
 	    dev->capture_mode &= ~APP_HDR_CAP_MODE_ZSL;
 	}else{
